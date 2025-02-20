@@ -3,7 +3,6 @@ const visitorModel = require("../models/visitorModel");
 const getVisitors = async (req, res) => {
     try {
         const visitors = await visitorModel.find();
-        console.log("Fetched visitors: " + visitors);
         res.status(200).json(visitors);
     } catch (error) {
         console.error('Error fetching visitors:', error);
@@ -92,4 +91,56 @@ const addVisitor = async (req, res) => {
     }
 };
 
-module.exports = { getVisitors, getTodayVisitors, addVisitor };
+// Update visitor timeout endpoint
+const updateVisitorTimeout = async (req, res) => {
+    try {
+        const { visitorId, timeOut } = req.body;
+        
+        const updatedVisitor = await visitorModel.findByIdAndUpdate(
+            visitorId,
+            { timeOut },
+            { new: true }
+        );
+
+        res.json({
+            message: 'Visitor timeout updated successfully',
+            visitor: updatedVisitor
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating visitor timeout' });
+    }
+};
+
+const updateVisitor = async (req, res) => {
+    try {
+        const { visitorId } = req.params; // Get visitor ID from URL
+        const { name, email, phone, timeIn, timeOut, assignedEmployee, room, visitorType } = req.body;
+
+        // Validate that at least one field is provided for an update
+        if (!name && !email && !phone && !timeIn && !timeOut && !assignedEmployee && !room && !visitorType) {
+            return res.status(400).json({ message: "At least one field must be provided for an update" });
+        }
+
+        // Find and update the visitor
+        const updatedVisitor = await visitorModel.findByIdAndUpdate(
+            visitorId,
+            { name, email, phone, timeIn, timeOut, assignedEmployee, room, visitorType },
+            { new: true, runValidators: true } // Return the updated document
+        );
+
+        if (!updatedVisitor) {
+            return res.status(404).json({ message: "Visitor not found" });
+        }
+
+        res.status(200).json({
+            message: "Visitor updated successfully",
+            visitor: updatedVisitor
+        });
+    } catch (error) {
+        console.error("Error updating visitor:", error);
+        res.status(500).json({ message: "Server error while updating visitor" });
+    }
+};
+
+
+module.exports = { getVisitors, getTodayVisitors, addVisitor, updateVisitorTimeout, updateVisitor };

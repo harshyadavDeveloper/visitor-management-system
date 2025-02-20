@@ -7,6 +7,7 @@ const visitorRoute = require("./routers/visitorRouter");
 const roomsRoute = require("./routers/roomsRouter");
 const cors = require('cors');
 const morgan = require('morgan');
+const chalk = require('chalk');
 
 const corsOptions = {
     // origin: 'http://localhost:5173' || 'https://mern-project-server-egcj.onrender.com',
@@ -28,7 +29,7 @@ app.use("/api/rooms", roomsRoute);
 const PORT = 5000;
 connectDb().then(() =>{
     app.listen(PORT, ()=>{
-    console.log("server is running on port 5000"); 
+    console.log(chalk.blue.bold("🚀 server is running on port 5000")); 
 });
 }); 
 

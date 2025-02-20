@@ -36,6 +36,9 @@ const ReceptionDashboard = () => {
 
   const [visitorData, setVisitorData] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTimeoutModalOpen, setIsTimeoutModalOpen] = useState(false);
+  const [selectedVisitor, setSelectedVisitor] = useState(null);
+  const [timeoutValue, setTimeoutValue] = useState(getCurrentDateTime());
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [formData, setFormData] = useState({
     name: '',
@@ -84,10 +87,45 @@ const ReceptionDashboard = () => {
     }
   };
 
+  const handleTimeoutClick = (visitor) => {
+    setSelectedVisitor(visitor);
+    setTimeoutValue(getCurrentDateTime());
+    setIsTimeoutModalOpen(true);
+  };
+
+  const handleTimeoutSubmit = async () => {
+    try {
+      const response = await axios.put(`http://localhost:5000/api/visitor/updateTimeout`, {
+        visitorId: selectedVisitor._id,
+        timeOut: timeoutValue
+      });
+
+      // Update the visitor data in the table
+      const updatedVisitors = visitorData.map(visitor =>
+        visitor._id === selectedVisitor._id ? response.data.visitor : visitor
+      );
+      setVisitorData(updatedVisitors);
+      
+      setIsTimeoutModalOpen(false);
+      setSnackbar({
+        open: true,
+        message: 'Timeout updated successfully!',
+        severity: 'success'
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to update timeout.',
+        severity: 'error'
+      });
+    }
+  };
+
   const fetchVisitorData = async () => {
     try {
       const response = await axios.get('http://localhost:5000/api/visitor/getTodayVisitors');
       setVisitorData(response.data);
+      console.log('Visitor data fetched successfully:', response.data);
     } catch (error) {
       setSnackbar({
         open: true,
@@ -160,9 +198,18 @@ const ReceptionDashboard = () => {
                   <TableCell>{visitor.email}</TableCell>
                   <TableCell>{visitor.phone}</TableCell>
                   <TableCell>{visitor.visitorType}</TableCell>
-                  <TableCell>{moment(visitor.timeIn).format('MMMM Do YYYY, h:mm:ss a')}</TableCell>
+                  <TableCell>{moment(visitor.timeIn).format('DD MMM YY, h:mm:ss a')}</TableCell>
                   <TableCell>
-                    {visitor.timeOut ? moment(visitor.timeOut).format('MMMM Do YYYY, h:mm:ss a') : '-'}
+                    {visitor.timeOut ? (
+                      moment(visitor.timeOut).format('DD MMM YY, h:mm:ss a')
+                    ) : (
+                      <Button 
+                        onClick={() => handleTimeoutClick(visitor)}
+                        sx={{ minWidth: 'auto' }}
+                      >
+                        -
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell>{visitor.assignedEmployee}</TableCell>
                   <TableCell>{visitor.room}</TableCell>
@@ -173,6 +220,7 @@ const ReceptionDashboard = () => {
         </Table>
       </TableContainer>
 
+      {/* Add Visitor Modal */}
       <Dialog 
         open={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
@@ -272,6 +320,35 @@ const ReceptionDashboard = () => {
             </Button>
           </DialogActions>
         </form>
+      </Dialog>
+
+      {/* Timeout Update Modal */}
+      <Dialog
+        open={isTimeoutModalOpen}
+        onClose={() => setIsTimeoutModalOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Update Time Out</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Time Out"
+            type="datetime-local"
+            value={timeoutValue}
+            onChange={(e) => setTimeoutValue(e.target.value)}
+            sx={{ mt: 2 }}
+            InputLabelProps={{ shrink: true }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setIsTimeoutModalOpen(false)} color="error">
+            Cancel
+          </Button>
+          <Button onClick={handleTimeoutSubmit} variant="contained" color="primary">
+            Update
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <Snackbar
